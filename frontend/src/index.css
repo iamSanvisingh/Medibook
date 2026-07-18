@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #F7F8FB;
+  --card: #FFFFFF;
+  --border: #E7EAF0;
+  --ink: #0F172A;
+  --muted: #64748B;
+  --primary: #5B5FEF;
+}
+
+.dark {
+  --surface: #0F1115;
+  --card: #171A21;
+  --border: #262B36;
+  --ink: #F1F5F9;
+  --muted: #94A3B8;
+  --primary: #7B7FFF;
+}
+
+body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  background: var(--surface);
+  color: var(--ink);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  font-family: 'Outfit', sans-serif;
+}
+
+.active hr {
+  @apply block
+}
+@media (max-width:740px) {
+  .active p {
+    @apply text-white bg-primary
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}

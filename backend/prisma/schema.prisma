@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReportStatus {
+  pending
+  parsing
+  ready
+  failed
+}
+
+enum BiomarkerStatus {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+model LabReport {
+  id                  String    @id @default(uuid())
+  patientId           String
+  doctorId            String
+  appointmentId       String?
+  chiefComplaint      String?
+  allergies           String[]  @default([])
+  familyHistory       String[]  @default([])
+  status              ReportStatus @default(pending)
+  aiSummary           String?
+  riskTags            String[]  @default([])
+  recommendedActions  String[]  @default([])
+  sourceFileUrl       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  biomarkers          Biomarker[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([status])
+  @@map("lab_reports")
+}
+
+model Biomarker {
+  id        String          @id @default(uuid())
+  reportId  String
+  report    LabReport       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  name      String
+  value     Float
+  unit      String?
+  refLow    Float?
+  refHigh   Float?
+  status    BiomarkerStatus @default(NORMAL)
+  category  String?
+  createdAt DateTime        @default(now())
+
+ @@index([reportId])
+  @@index([status])
+  @@map("biomarkers")
+}
