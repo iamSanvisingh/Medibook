@@ -24,7 +24,6 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
 ]
-console.log('CORS allowed origins:', allowedOrigins)
 
 app.use(cors({
   origin: (origin, callback) => {
