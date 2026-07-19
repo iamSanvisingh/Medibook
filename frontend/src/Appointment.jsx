@@ -16,7 +16,6 @@ const Appointment = () => {
   const [docSlots, setDocSlots] = useState([])
   const [slotIndex, setSlotIndex] = useState(0)
   const [slotTime, setSlotTime] = useState('')
-  const [visitMode, setVisitMode] = useState('in-person') // UI-only — not sent to backend unless you add a field for it
 
   const fetchDocInfo = async () => {
     const doc = doctors.find((doc) => doc._id === docId)
@@ -215,30 +214,6 @@ const Appointment = () => {
               {docSlots.length > 0 && docSlots[slotIndex] && docSlots[slotIndex].length === 0 && (
                 <p className='col-span-3 text-sm text-muted dark:text-dark-muted'>No slots left for this day</p>
               )}
-            </div>
-
-            {/* Video / In-person toggle — UI only for now */}
-            <div className='flex gap-2 mt-5'>
-              <button
-                onClick={() => setVisitMode('video')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-medium transition-all border ${
-                  visitMode === 'video'
-                    ? 'bg-primary-light dark:bg-primary/20 border-primary text-primary'
-                    : 'border-border dark:border-dark-border text-muted dark:text-dark-muted'
-                }`}
-              >
-                Video
-              </button>
-              <button
-                onClick={() => setVisitMode('in-person')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-medium transition-all border ${
-                  visitMode === 'in-person'
-                    ? 'bg-primary-light dark:bg-primary/20 border-primary text-primary'
-                    : 'border-border dark:border-dark-border text-muted dark:text-dark-muted'
-                }`}
-              >
-                In-person
-              </button>
             </div>
 
             <button
