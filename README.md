@@ -47,20 +47,22 @@ System-wide, persisted light/dark theme across all three apps.
 
 ## Folder Structure
 
+```
 Medibook/
-├── frontend/     # Patient-facing React app
-├── admin/        # Admin + Doctor panel React app
-├── backend/
-│   ├── controllers/
-│   ├── routes/
-│   ├── models/           # MongoDB (Mongoose) models
-│   ├── middlewares/       # Auth, upload, rate limiting
-│   ├── config/            # DB connections, Cloudinary, Gemini client
-│   ├── prisma/
-│   │   ├── schema.prisma  # PostgreSQL schema
-│   │   └── migrations/    # Versioned SQL migrations, including RLS policies
-│   ├── utils/              # Gemini prompt + Zod schema
-│   └── server.js
+  frontend/            Patient-facing React app
+  admin/               Admin + Doctor panel React app
+  backend/
+    controllers/
+    routes/
+    models/            MongoDB (Mongoose) models
+    middlewares/       Auth, upload, rate limiting
+    config/            DB connections, Cloudinary, Gemini client
+    prisma/
+      schema.prisma    PostgreSQL schema
+      migrations/      Versioned SQL migrations, including RLS policies
+    utils/             Gemini prompt + Zod schema
+    server.js
+```
 
 ## Local Setup
 
