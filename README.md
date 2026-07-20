@@ -1,168 +1,139 @@
-# Medibook - Doctor Appointment Web App
+# MediBook — Full-Stack Healthcare Appointment Platform
 
-**Medibook** is a full-stack web application designed to make healthcare more accessible by simplifying the process of booking doctor appointments. It offers three levels of login: **Patient**, **Doctor**, and **Admin**, each with distinct features tailored to their roles. The app integrates **online payment gateways (Stripe and Razorpay)** to facilitate seamless and secure payments. Built using the **MERN stack** (MongoDB, Express.js, React.js, and Node.js), Medibook provides an efficient, user-friendly experience for both patients and healthcare providers.
+MediBook is a full-stack healthcare platform with three separate applications — Patient, Doctor, and Admin — sharing one backend. Beyond standard appointment booking, it features an AI-assisted clinical workflow: doctors can upload lab report PDFs, which are automatically parsed by Google's Gemini API into structured, classified biomarker data, stored in a dedicated PostgreSQL layer secured with Row-Level Security.
 
-## 🛠️ Tech Stack
+## Architecture
 
-- **Frontend**: React.js
+MediBook uses **polyglot persistence** — two databases, each chosen for what it's actually good at:
+
+- **MongoDB** — scheduling, user/doctor accounts, appointments, prescriptions. Flexible, document-shaped data with no need for strict relational guarantees.
+- **PostgreSQL (via Prisma ORM)** — structured clinical lab report and biomarker data, where strict typing, numeric range queries, and enforced relationships genuinely matter. Protected by **Row-Level Security** policies enforcing per-doctor and per-patient data isolation directly at the database engine level, independent of application code.
+
+The two databases are linked at the application layer via shared MongoDB `_id` values stored as plain strings in Postgres — there's no cross-database foreign key (which isn't possible between two separate database engines), so referential integrity across the boundary is handled deliberately in application code.
+
+## Tech Stack
+
+- **Frontend**: React.js, Tailwind CSS (patient-facing app, admin panel, and doctor panel — three separate Vite apps)
 - **Backend**: Node.js, Express.js
-- **Database**: MongoDB
-- **Payment Gateways**: Razorpay
-- **Authentication**: JSON Web Token (JWT)
+- **Databases**: MongoDB (Mongoose), PostgreSQL (Prisma ORM)
+- **AI**: Google Gemini API with schema-constrained structured output, validated server-side with Zod before any database write
+- **Authentication**: JWT, with role-based middleware for Patient, Doctor, and Admin
+- **Payments**: Razorpay
+- **File storage**: Cloudinary
+- **PDF text extraction**: pdf-parse
 
-## 🔑 Key Features
+## Key Features
 
-### 1. Three-Level Authentication
+### Three-tier authentication
+Separate JWT-protected flows for Patient, Doctor, and Admin, each with their own middleware and permissions.
 
-- **Patient Login**: 
-  - Patients can sign up, log in, and book appointments with doctors.
-  - Manage appointments (view, cancel, or reschedule).
-  - Secure online payment options available (cash, Stripe, Razorpay).
-  - User profile with editable information (name, email, address, gender, birthday, profile picture).
+### AI-assisted clinical dashboard
+Doctors can upload a patient's lab report PDF. The system extracts raw text, sends it to Gemini with a schema-constrained prompt, validates the AI's structured JSON response against a Zod schema, computes clinical status (NORMAL/HIGH/LOW/CRITICAL) deterministically in application code, and displays a triage queue, biomarker breakdown, AI-generated executive summary, and recommended actions.
 
-- **Doctor Login**:
-  - Doctors can log in and manage appointments.
-  - Dashboard displays earnings, number of patients, number of appointments, and latest bookings.
-  - Update profile details (description, fees, address, availability status).
-  - View appointment details (patient info, payment mode, appointment status).
+### Row-Level Security
+PostgreSQL policies ensure a doctor's queries can only ever return their own patients' lab data, and a patient's queries can only return their own — enforced by the database itself, not only by application-level filtering, as a genuine second layer of defense.
 
-- **Admin Login**:
-  - Admins can create and manage doctor profiles.
-  - Dashboard with analytics: total doctors, total appointments, total patients, and recent bookings.
-  - Add new doctors (image, specialty, degree, experience, address, fees, etc.).
-  - View and manage all appointments (cancel or mark as completed).
+### Prescriptions
+Doctors can write structured prescriptions (medication, dosage, frequency, duration, instructions) tied to a specific appointment; patients can view their prescription history.
 
-## 🏠 Home Page
+### Appointment booking & payments
+Patients browse doctors by specialty, book available time slots, and pay via Razorpay.
 
-- Features a user-friendly layout where users can:
-  - **Search for doctors** based on specialties.
-  - **View top doctors** and their profiles.
-  - Explore additional sections: About Us, Delivery Information, Privacy Policy, and Get in Touch.
-- **Footer** includes navigation links: Home, About Us, Delivery Info, Privacy Policy, Contact Us.
+### Admin panel
+Manage doctors, view platform-wide analytics (bookings, revenue by department, clinician load), and oversee all appointments.
 
-## 🩺 All Doctors Page
+### Dark mode
+System-wide, persisted light/dark theme across all three apps.
 
-- Lists all available doctors.
-- Users can **filter doctors by specialty**.
-- Clicking on a doctor's profile redirects to the **Doctor Appointment Page**.
+## Folder Structure
 
-## 📄 About Page
-
-- Provides information about **Medibook’s vision** and mission.
-- **Why Choose Us** section highlights:
-  - **Efficiency**: Streamlined appointment process.
-  - **Convenience**: Online booking and payment.
-  - **Personalization**: Tailored experience based on user preferences.
-- Footer section with additional links.
-
-## 📞 Contact Page
-
-- Contains **office address** and contact details.
-- Section to explore job opportunities.
-- Footer navigation links.
-
-## 📅 Doctor Appointment Page
-
-- Displays detailed information about the selected doctor:
-  - **Profile picture, qualification, experience**, and a brief description.
-  - **Appointment booking form**: Choose date, time, and payment method.
-  - Online payment options: **Cash, Stripe, or Razorpay**.
-  - **Related doctors** section at the bottom.
-- Users need to **create an account or log in** before booking an appointment.
-
-## 👤 User Profile
-
-- Accessible after login.
-- Users can view and edit their profile:
-  - **Upload profile picture**.
-  - Update **name, email, address, gender, and birthday**.
-- View list of upcoming and past appointments.
-- **Logout** option available.
-
-## 🗄️ Admin Panel
-
-- **Dashboard**:
-  - Displays statistics: **Number of doctors**, **appointments**, **patients**, and **latest bookings**.
-  - Option to **cancel bookings** if needed.
-- **Add Doctor**:
-  - Form to add a new doctor profile (image, specialty, email, password, degree, address, experience, fees, description).
-- **Doctor List**:
-  - View all registered doctors with options to edit or delete profiles.
-- **Appointments**:
-  - List of all appointments including patient name, age, date, time, doctor name, fees.
-  - Admin actions: **Cancel** or **Mark as Completed**.
-
-## 🩺 Doctor Dashboard
-
-- **Earnings Overview**:
-  - Total earnings from completed appointments.
-- **Appointments List**:
-  - View detailed list of patient appointments (name, age, date, time, payment mode, status).
-  - Actions: **Mark appointment as completed** or **Cancel appointment**.
-- **Profile Management**:
-  - Doctors can update their **profile information**, including description, fees, address, and availability status.
-
-## 💳 Payment Integration
-
-- Supports multiple payment methods:
-  - **Cash Payment**
-  - **Razorpay Integration**
-- Ensures a secure and smooth payment experience for users.
-
-## 🌐 Project Setup
-
-To set up and run this project locally:
-
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/your-username/Medibook.git
-   cd Medibook
-   ```
-
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   cd client
-   npm install
-   ```
-
-3. **Environment Variables**:
-   - Create a `.env` file in the root directory and add the following:
-     ```env
-     MONGO_URI=your_mongodb_connection_string
-     JWT_SECRET=your_jwt_secret
-     STRIPE_API_KEY=your_stripe_api_key
-     RAZORPAY_API_KEY=your_razorpay_api_key
-     ```
-
-4. **Run the Application**:
-   ```bash
-   npm run dev
-   ```
-
-## 📦 Folder Structure
-
-```plaintext
 Medibook/
-├── client/          # Frontend (React.js)
-├── server/          # Backend (Node.js, Express.js)
-├── models/          # MongoDB Schemas
-├── controllers/     # API Controllers
-├── routes/          # API Routes
-├── middleware/      # Authentication and Error Handling
-├── config/          # Configuration Files
-├── utils/           # Utility Functions
-├── public/          # Static Files
-└── .env             # Environment Variables
+├── frontend/     # Patient-facing React app
+├── admin/        # Admin + Doctor panel React app
+├── backend/
+│   ├── controllers/
+│   ├── routes/
+│   ├── models/           # MongoDB (Mongoose) models
+│   ├── middlewares/       # Auth, upload, rate limiting
+│   ├── config/            # DB connections, Cloudinary, Gemini client
+│   ├── prisma/
+│   │   ├── schema.prisma  # PostgreSQL schema
+│   │   └── migrations/    # Versioned SQL migrations, including RLS policies
+│   ├── utils/              # Gemini prompt + Zod schema
+│   └── server.js
+
+## Local Setup
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/iamSanvisingh/Medibook.git
+cd Medibook
 ```
 
-## 🤝 Contributing
+### 2. Install dependencies for all three apps
+```bash
+cd backend && npm install
+cd ../admin && npm install
+cd ../frontend && npm install
+```
 
-We welcome contributions! Please feel free to submit issues, fork the repository, and open pull requests.
+### 3. Environment variables
 
+**`backend/.env`**
+```env
+MONGODB_URI=your_mongodb_connection_string
+DATABASE_URL=your_postgresql_connection_string
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_SECRET_KEY=your_cloudinary_secret
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-3.5-flash-lite
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+ADMIN_EMAIL=your_admin_email
+ADMIN_PASSWORD=your_admin_password
+FRONTEND_URL=http://localhost:5173
+ADMIN_URL=http://localhost:5174
+```
 
-## 🌟 Acknowledgements
+**`admin/.env`**
+```env
+VITE_BACKEND_URL=http://localhost:4000
+```
 
-- Thanks to the developers and contributors of MongoDB, Express.js, React.js, Node.js, Stripe, and Razorpay for their fantastic tools and libraries.
+**`frontend/.env`**
+```env
+VITE_BACKEND_URL=http://localhost:4000
+VITE_ADMIN_URL=http://localhost:5174
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
 
----
+### 4. Set up PostgreSQL
+```bash
+cd backend
+npx prisma migrate deploy
+```
+
+### 5. Run all three apps
+```bash
+# in backend/
+npm run server
+
+# in admin/
+npm run dev
+
+# in frontend/
+npm run dev
+```
+
+## Deployment
+
+- **Backend**: deployed on Render (persistent Node process — needed for a stable Prisma connection pool, avoiding the connection-exhaustion issues serverless platforms have with Postgres)
+- **Frontend & Admin**: deployed separately on Vercel
+- **MongoDB**: MongoDB Atlas
+- **PostgreSQL**: Neon (serverless Postgres)
+
+## License
+
+This project is for portfolio/educational purposes.
