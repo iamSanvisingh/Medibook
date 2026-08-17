@@ -215,61 +215,155 @@ const Dashboard = () => {
         {/* RIGHT COLUMN — pie chart on top, doctor load below, together matching left column's height */}
         <div className='lg:col-span-1 flex flex-col gap-5 h-full'>
 
-          {/* Revenue Pie Chart */}
-          <div className='rounded-xl overflow-hidden w-full bg-card dark:bg-dark-card border border-border dark:border-dark-border'>
-            <div className='px-5 py-4 border-b border-border dark:border-dark-border'>
-              <p className='font-medium text-sm text-ink dark:text-dark-ink'>Revenue Analytics</p>
-              <p className='text-xs mt-0.5 text-muted dark:text-dark-muted'>
-                Total: <span className='font-semibold text-primary'>
-                  ₹{totalRevenue.toLocaleString()}
-                </span>
-              </p>
-            </div>
+          {/* --- REVENUE ANALYTICS PIE CHART SECTION --- */}
+<div className="bg-[#12141f] border border-gray-800 rounded-xl p-5 flex flex-col justify-between shadow-lg">
+  <div className="flex justify-between items-center mb-2">
+    <div>
+      <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+        Revenue Analytics
+      </h3>
+      <p className="text-white text-lg font-bold">
+        Total: ₹
+        {appointments
+          ? appointments
+              .filter((item) => !item.cancelled && (item.isCompleted || item.payment))
+              .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
+          : 0}
+      </p>
+    </div>
+  </div>
 
-            <div className='p-6 flex justify-center items-center'>
-              {chartData.length === 0 ? (
-                <div className='flex items-center justify-center h-52'>
-                  <p className='text-sm text-muted dark:text-dark-muted'>No revenue data yet</p>
-                </div>
-              ) : (
-                <div className='w-full aspect-square max-w-[280px]'>
-                  <ResponsiveContainer width='100%' height='100%'>
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        cx='50%'
-                        cy='45%'
-                        outerRadius='75%'
-                        dataKey='value'
-                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                      >
-                        {chartData.map((_, index) => (
-                          <Cell key={index} fill={COLORS[index % COLORS.length]} stroke={isDark ? '#171A21' : '#FFFFFF'} strokeWidth={2} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => `₹${value.toLocaleString()}`}
-                        contentStyle={{
-                          background: isDark ? '#171A21' : '#FFFFFF',
-                          border: `1px solid ${isDark ? '#262B36' : '#E7EAF0'}`,
-                          borderRadius: '8px',
-                          color: isDark ? '#F1F5F9' : '#0F172A',
-                        }}
-                      />
-                      <Legend
-                        verticalAlign='bottom'
-                        height={36}
-                        formatter={(value) => (
-                          <span style={{ color: isDark ? '#94A3B8' : '#0F172A', fontSize: '12px' }}>{value}</span>
-                        )}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+  {/* SVG Pie Chart */}
+  <div className="relative flex items-center justify-center my-4">
+    {(() => {
+      // 1. Calculate revenue grouped by specialty
+      const validBookings = (appointments || []).filter(
+        (item) => !item.cancelled && (item.isCompleted || item.payment)
+      );
+
+      const specialtyMap = {};
+      let totalRev = 0;
+
+      validBookings.forEach((item) => {
+        const docSpecialty = item.docData?.speciality || "General";
+        const amt = Number(item.amount) || 0;
+        specialtyMap[docSpecialty] = (specialtyMap[docSpecialty] || 0) + amt;
+        totalRev += amt;
+      });
+
+      const slices = Object.entries(specialtyMap).map(([specialty, amt]) => ({
+        specialty,
+        amount: amt,
+        percentage: totalRev > 0 ? (amt / totalRev) * 100 : 0,
+      }));
+
+      // Fallback colors for categories
+      const palette = ["#6366f1", "#10b981", "#f43f5e", "#f59e0b", "#8b5cf6", "#06b6d4"];
+
+      if (totalRev === 0 || slices.length === 0) {
+        return (
+          <div className="h-44 flex items-center justify-center text-gray-500 text-sm">
+            No realized revenue recorded yet
+          </div>
+        );
+      }
+
+      // 2. Render Single Slice (100%) vs. Multi-Slice SVG
+      if (slices.length === 1) {
+        return (
+          <div className="flex flex-col items-center">
+            <svg viewBox="0 0 200 200" className="w-44 h-44 overflow-visible">
+              <circle cx="100" cy="100" r="75" fill={palette[0]} />
+              <text
+                x="100"
+                y="100"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#ffffff"
+                className="text-sm font-bold select-none"
+              >
+                100%
+              </text>
+            </svg>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: palette[0] }} />
+              <span className="text-gray-300 text-xs">{slices[0].specialty}</span>
             </div>
           </div>
+        );
+      }
 
+      // 3. Multi-Slice Rendering with cumulative angles
+      let cumulativePercent = 0;
+      const getCoordinatesForPercent = (percent) => {
+        const x = 100 + 75 * Math.cos(2 * Math.PI * percent);
+        const y = 100 + 75 * Math.sin(2 * Math.PI * percent);
+        return [x, y];
+      };
+
+      return (
+        <div className="flex flex-col items-center w-full">
+          <svg viewBox="0 0 200 200" className="w-44 h-44 overflow-visible">
+            {slices.map((slice, idx) => {
+              const startPercent = cumulativePercent;
+              cumulativePercent += slice.percentage / 100;
+              const endPercent = cumulativePercent;
+
+              const [startX, startY] = getCoordinatesForPercent(startPercent);
+              const [endX, endY] = getCoordinatesForPercent(endPercent);
+              const largeArcFlag = slice.percentage > 50 ? 1 : 0;
+
+              const pathData = [
+                `M 100 100`,
+                `L ${startX} ${startY}`,
+                `A 75 75 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+                `Z`,
+              ].join(" ");
+
+              // Midpoint coordinate for text label
+              const midPercent = (startPercent + endPercent) / 2;
+              const [labelX, labelY] = [
+                100 + 45 * Math.cos(2 * Math.PI * midPercent),
+                100 + 45 * Math.sin(2 * Math.PI * midPercent),
+              ];
+
+              return (
+                <g key={idx}>
+                  <path d={pathData} fill={palette[idx % palette.length]} />
+                  {slice.percentage >= 10 && (
+                    <text
+                      x={labelX}
+                      y={labelY}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill="#ffffff"
+                      className="text-xs font-semibold select-none"
+                    >
+                      {Math.round(slice.percentage)}%
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Legend */}
+          <div className="flex flex-wrap justify-center gap-3 mt-4">
+            {slices.map((slice, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <span
+                  className="w-2.5 h-2.5 rounded-sm"
+                  style={{ backgroundColor: palette[idx % palette.length] }}
+                />
+                <span className="text-gray-300 text-xs">{slice.specialty}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    })()}
+  </div>
+</div>
           {/* Doctor Load — colorful bar graph */}
           <div className='rounded-xl overflow-hidden w-full flex-1 bg-card dark:bg-dark-card border border-border dark:border-dark-border'>
             <div className='px-5 py-4 border-b border-border dark:border-dark-border'>
